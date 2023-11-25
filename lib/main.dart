@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,43 +13,61 @@ extension on Uri {
 // TODO: Verify possible import formats (e.g. "import 'package" or "import './")
 final importRegex = RegExp(r"""^import ['"](?<path>.+)['"];$""");
 
-TaskEither<CliError, List<File>> listFilesCurrentDir = TaskEither.tryCatch(
+// TODO: Read from `pubspec.yaml`
+String packageName() => "dart_cli_with_fpdart";
+
+TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
+    listFilesCurrentDir = TaskEither.tryCatch(
   () async {
-    final dir = Directory.current;
-    final fileList = <File>[];
+    final dir = Directory.current; // TODO: Specify directory in settings
+    final appFileList = <ImportMatch>[];
+    final imports = HashSet<ImportMatch>();
 
     final dirList = dir.list(recursive: true);
-    await for (final FileSystemEntity f in dirList) {
-      if (f is File && f.uri.fileExtension == "dart") {
-        fileList.add(f);
+    await for (final FileSystemEntity file in dirList) {
+      if (file is File && file.uri.fileExtension == "dart") {
+        imports.addAll(await readImports(file));
+
+        appFileList.add(ImportMatch.relative(file));
       }
     }
 
-    return fileList;
+    return (appFileList, imports);
   },
   ReadFilesError.new,
 );
 
-TaskEither<CliError, List<ImportMatch>> readImports(File file) =>
-    TaskEither.tryCatch(
-      () async {
-        final linesStream =
-            file.openRead().transform(utf8.decoder).transform(LineSplitter());
-        final importList = <ImportMatch>[];
+Future<List<ImportMatch>> readImports(File file) async {
+  final projectName = packageName();
+  final projectPackage = "package:$projectName";
 
-        await for (var line in linesStream) {
-          final path = importRegex.firstMatch(line)?.namedGroup("path");
-          if (path != null) {
-            importList.add(ImportMatch(path: path, file: file));
-          } else {
-            break; // Assume all imports are declared first
-          }
-        }
+  final currentDir = file.path
+      .split("/")
+      .dropRight()
+      .join("/")
+      .replaceFirst(Directory.current.path, "");
 
-        return importList;
-      },
-      ReadFileImportsError.new,
-    );
+  final linesStream =
+      file.openRead().transform(utf8.decoder).transform(LineSplitter());
+  final importList = <ImportMatch>[];
 
+  await for (var line in linesStream) {
+    if (line.isEmpty) continue;
+
+    final path = importRegex.firstMatch(line)?.namedGroup("path");
+
+    /// `package:` is same as `./`
+    if (path != null) {
+      if (path.startsWith(projectPackage)) {
+        importList.add(
+            ImportMatch(currentDir + path.replaceFirst(projectPackage, "")));
+      }
+    } else {
+      break; // Assume all imports are declared first
+    }
+  }
+
+  return importList;
+}
 
 // TODO: Build an efficient data structure (Tree-like) to scan unused files

@@ -1,20 +1,23 @@
 import 'dart:io';
 
-final class ImportMatch {
-  final File file;
-  final String path; // TODO: Parse (validate) this path
-  const ImportMatch({required this.path, required this.file});
+import 'package:equatable/equatable.dart';
 
-  /// TODO: Do not access [Directory.current] directly
-  String get relativePath => file.uri.toString().replaceFirst(
-        Directory.current.uri.toString(),
-        "",
+final class ImportMatch extends Equatable {
+  final String path;
+  const ImportMatch(this.path);
+
+  factory ImportMatch.relative(File file) => ImportMatch(
+        file.path.replaceFirst(
+          Directory.current.path,
+          "",
+        ),
       );
-
-  List<String> get pathList => relativePath.split("/");
 
   @override
   String toString() {
-    return pathList.toString();
+    return path;
   }
+
+  @override
+  List<Object?> get props => [path];
 }
