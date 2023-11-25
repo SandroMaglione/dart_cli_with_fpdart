@@ -39,7 +39,7 @@ TaskEither<CliError, List<ImportMatch>> readImports(File file) =>
         await for (var line in linesStream) {
           final path = importRegex.firstMatch(line)?.namedGroup("path");
           if (path != null) {
-            importList.add(ImportMatch(path));
+            importList.add(ImportMatch(path: path, file: file));
           } else {
             break; // Assume all imports are declared first
           }
