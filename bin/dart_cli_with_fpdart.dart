@@ -1,9 +1,21 @@
+import 'dart:io';
+
+import 'package:args/args.dart';
 import 'package:dart_cli_with_fpdart/cli_options.dart';
 import 'package:dart_cli_with_fpdart/main.dart';
 import 'package:fpdart/fpdart.dart';
 
+const options = "options";
+
 void main(List<String> arguments) async {
-  final cliOptions = CliOptions.init();
+  /// https://dart.dev/tutorials/server/cmdline#setting-exit-codes
+  exitCode = 0;
+
+  final parser = ArgParser()..addOption(options, abbr: 'o');
+
+  ArgResults argResults = parser.parse(arguments);
+  final optionsPath = argResults[options];
+  final cliOptions = CliOptions.init(optionsPath);
 
   /// 1. List all files (`path`), use `HashSet`
   /// 2. For each file, also list the imports (get `path` relative to current directory)

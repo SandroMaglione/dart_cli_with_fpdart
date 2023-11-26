@@ -1,0 +1,15 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "dart-cli-with-fpdart",
+      "request": "launch",
+      "type": "dart",
+      "program": "bin/dart_cli_with_fpdart.dart",
+      "args": ["-o", "./cli_options.yaml"]
+    }
+  ]
+}
