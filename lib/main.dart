@@ -17,9 +17,9 @@ final importRegex = RegExp(r"""^import ['"](?<path>.+)['"];$""");
 String packageName() => "dart_cli_with_fpdart";
 
 TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
-    listFilesCurrentDir = TaskEither.tryCatch(
+    listFilesLibDir = TaskEither.tryCatch(
   () async {
-    final dir = Directory.current; // TODO: Specify directory in settings
+    final dir = Directory("lib"); // TODO: Specify directory in settings
     final appFileList = <ImportMatch>[];
     final imports = HashSet<ImportMatch>();
 
@@ -41,12 +41,6 @@ Future<List<ImportMatch>> readImports(File file) async {
   final projectName = packageName();
   final projectPackage = "package:$projectName";
 
-  final currentDir = file.path
-      .split("/")
-      .dropRight()
-      .join("/")
-      .replaceFirst(Directory.current.path, "");
-
   final linesStream =
       file.openRead().transform(utf8.decoder).transform(LineSplitter());
   final importList = <ImportMatch>[];
@@ -56,11 +50,14 @@ Future<List<ImportMatch>> readImports(File file) async {
 
     final path = importRegex.firstMatch(line)?.namedGroup("path");
 
-    /// `package:` is same as `./`
+    /// `package:` refers to `lib`
     if (path != null) {
       if (path.startsWith(projectPackage)) {
         importList.add(
-            ImportMatch(currentDir + path.replaceFirst(projectPackage, "")));
+          ImportMatch(
+            path.replaceFirst(projectPackage, ""),
+          ),
+        );
       }
     } else {
       break; // Assume all imports are declared first

@@ -6,7 +6,7 @@ void main(List<String> arguments) async {
   /// 2. For each file, also list the imports (get `path` relative to current directory)
   /// 3. Remove files from `HashSet` if found in imports
   /// 4. What's left in the `HashSet` is unused
-  final program = listFilesCurrentDir;
+  final program = listFilesLibDir;
 
   final files = await program.run();
   files.match((l) {
