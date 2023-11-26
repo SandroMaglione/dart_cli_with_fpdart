@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dart_cli_with_fpdart/cli_error.dart';
+import 'package:dart_cli_with_fpdart/cli_options.dart';
 import 'package:dart_cli_with_fpdart/import_match.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:yaml/yaml.dart';
@@ -14,35 +15,37 @@ extension on Uri {
 // TODO: Verify possible import formats (e.g. "import 'package" or "import './")
 final importRegex = RegExp(r"""^import ['"](?<path>.+)['"];$""");
 
-Future<String> packageName() async {
-  final pubspec = File("pubspec.yaml");
+Future<String> packageName(CliOptions cliOptions) async {
+  final pubspec = File(cliOptions.pubspecPath);
   final fileContent = await pubspec.readAsString();
   final yamlContent = loadYaml(fileContent);
   final projectName = yamlContent['name'];
   return projectName;
 }
 
-TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
-    listFilesLibDir = TaskEither.tryCatch(
-  () async {
-    final projectName = await packageName();
-    final dir = Directory("lib"); // TODO: Specify directory in settings
-    final appFileList = <ImportMatch>[];
-    final imports = HashSet<ImportMatch>();
+TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)> listFilesLibDir(
+  CliOptions cliOptions,
+) =>
+    TaskEither.tryCatch(
+      () async {
+        final projectName = await packageName(cliOptions);
+        final dir = Directory("lib"); // TODO: Specify directory in settings
+        final appFileList = <ImportMatch>[];
+        final imports = HashSet<ImportMatch>();
 
-    final dirList = dir.list(recursive: true);
-    await for (final FileSystemEntity file in dirList) {
-      if (file is File && file.uri.fileExtension == "dart") {
-        imports.addAll(await readImports(file, projectName));
+        final dirList = dir.list(recursive: true);
+        await for (final FileSystemEntity file in dirList) {
+          if (file is File && file.uri.fileExtension == "dart") {
+            imports.addAll(await readImports(file, projectName));
 
-        appFileList.add(ImportMatch.relative(file));
-      }
-    }
+            appFileList.add(ImportMatch.relative(file));
+          }
+        }
 
-    return (appFileList, imports);
-  },
-  ReadFilesError.new,
-);
+        return (appFileList, imports);
+      },
+      ReadFilesError.new,
+    );
 
 Future<List<ImportMatch>> readImports(File file, String projectName) async {
   final projectPackage = "package:$projectName";

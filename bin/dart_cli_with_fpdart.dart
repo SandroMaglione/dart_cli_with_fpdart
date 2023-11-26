@@ -1,14 +1,18 @@
+import 'package:dart_cli_with_fpdart/cli_options.dart';
 import 'package:dart_cli_with_fpdart/main.dart';
 import 'package:fpdart/fpdart.dart';
 
 void main(List<String> arguments) async {
+  final cliOptions = CliOptions.init();
+
   /// 1. List all files (`path`), use `HashSet`
   /// 2. For each file, also list the imports (get `path` relative to current directory)
   /// 3. Remove files from `HashSet` if found in imports
   /// 4. What's left in the `HashSet` is unused
   final program = listFilesLibDir;
 
-  final files = await program.run();
+  final files = await program(cliOptions).run();
+
   files.match((l) {
     print("Error: $l");
   }, (r) {
