@@ -6,8 +6,9 @@ final class ImportMatch extends Equatable {
   final String path;
   const ImportMatch(this.path);
 
-  factory ImportMatch.relative(File file) =>
-      ImportMatch(file.path.replaceFirst("lib", ""));
+  factory ImportMatch.relative(File file) => ImportMatch(
+        file.path.replaceFirst("lib", ""),
+      );
 
   @override
   String toString() {

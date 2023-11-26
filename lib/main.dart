@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dart_cli_with_fpdart/cli_error.dart';
 import 'package:dart_cli_with_fpdart/import_match.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:yaml/yaml.dart';
 
 extension on Uri {
   String get fileExtension => toString().split('.').last;
@@ -13,12 +14,18 @@ extension on Uri {
 // TODO: Verify possible import formats (e.g. "import 'package" or "import './")
 final importRegex = RegExp(r"""^import ['"](?<path>.+)['"];$""");
 
-// TODO: Read from `pubspec.yaml`
-String packageName() => "dart_cli_with_fpdart";
+Future<String> packageName() async {
+  final pubspec = File("pubspec.yaml");
+  final fileContent = await pubspec.readAsString();
+  final yamlContent = loadYaml(fileContent);
+  final projectName = yamlContent['name'];
+  return projectName;
+}
 
 TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
     listFilesLibDir = TaskEither.tryCatch(
   () async {
+    final projectName = await packageName();
     final dir = Directory("lib"); // TODO: Specify directory in settings
     final appFileList = <ImportMatch>[];
     final imports = HashSet<ImportMatch>();
@@ -26,7 +33,7 @@ TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
     final dirList = dir.list(recursive: true);
     await for (final FileSystemEntity file in dirList) {
       if (file is File && file.uri.fileExtension == "dart") {
-        imports.addAll(await readImports(file));
+        imports.addAll(await readImports(file, projectName));
 
         appFileList.add(ImportMatch.relative(file));
       }
@@ -37,8 +44,7 @@ TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
   ReadFilesError.new,
 );
 
-Future<List<ImportMatch>> readImports(File file) async {
-  final projectName = packageName();
+Future<List<ImportMatch>> readImports(File file, String projectName) async {
   final projectPackage = "package:$projectName";
 
   final linesStream =
@@ -66,5 +72,3 @@ Future<List<ImportMatch>> readImports(File file) async {
 
   return importList;
 }
-
-// TODO: Build an efficient data structure (Tree-like) to scan unused files
