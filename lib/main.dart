@@ -5,7 +5,8 @@ import 'package:fpdart/fpdart.dart';
 
 typedef FileUsage = ({
   Iterable<ImportMatch> unused,
-  Iterable<ImportMatch> used
+  Iterable<ImportMatch> used,
+  ImportMatch entry,
 });
 
 ReaderTaskEither<MainLayer, CliError, FileUsage> program(
@@ -25,9 +26,11 @@ ReaderTaskEither<MainLayer, CliError, FileUsage> program(
           ),
         );
 
+        final entry = ImportMatch(cliOptions.entry);
         final readFile = await _(
           ReaderTaskEither(
-            (layer) => layer.fileReader.listFilesLibDir(packageName).run(),
+            (layer) =>
+                layer.fileReader.listFilesLibDir(packageName, entry).run(),
           ),
         );
 
@@ -35,6 +38,10 @@ ReaderTaskEither<MainLayer, CliError, FileUsage> program(
           (projectFile) => readFile.importSet.contains(projectFile),
         );
 
-        return (unused: fileUsage.$1, used: fileUsage.$2);
+        return (
+          unused: fileUsage.$1,
+          used: fileUsage.$2,
+          entry: entry,
+        );
       },
     );

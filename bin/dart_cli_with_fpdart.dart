@@ -31,6 +31,10 @@ void main(List<String> arguments) async =>
 
       stdout.writeln();
 
+      stdout.writeln("Entry 👉: ${result.entry}");
+
+      stdout.writeln();
+
       stdout.writeln("Unused 👎");
       for (final file in result.unused) {
         stdout.writeln("  => $file");

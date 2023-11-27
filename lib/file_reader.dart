@@ -17,7 +17,10 @@ abstract final class FileReader {
       ({
         List<ImportMatch> fileList,
         HashSet<ImportMatch> importSet,
-      })> listFilesLibDir(String packageName);
+      })> listFilesLibDir(
+    String packageName,
+    ImportMatch entry,
+  );
 }
 
 final class FileReaderImpl implements FileReader {
@@ -29,7 +32,11 @@ final class FileReaderImpl implements FileReader {
       ({
         List<ImportMatch> fileList,
         HashSet<ImportMatch> importSet,
-      })> listFilesLibDir(String packageName) => TaskEither.tryCatch(
+      })> listFilesLibDir(
+    String packageName,
+    ImportMatch entry,
+  ) =>
+      TaskEither.tryCatch(
         () async {
           final dir = Directory("lib");
 
@@ -41,7 +48,10 @@ final class FileReaderImpl implements FileReader {
             if (file is File && file.uri._fileExtension == "dart") {
               importSet.addAll(await _readImports(file, packageName));
 
-              fileList.add(ImportMatch.relative(file));
+              final importMatch = ImportMatch.relative(file);
+              if (importMatch != entry) {
+                fileList.add(importMatch);
+              }
             }
           }
 
@@ -51,7 +61,7 @@ final class FileReaderImpl implements FileReader {
       );
 
   Future<List<ImportMatch>> _readImports(File file, String packageName) async {
-    final projectPackage = "package:$packageName";
+    final projectPackage = "package:$packageName/";
 
     final linesStream = file
         .openRead()
