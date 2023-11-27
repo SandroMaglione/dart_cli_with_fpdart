@@ -1,41 +1,37 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:dart_cli_with_fpdart/cli_options.dart';
+import 'package:dart_cli_with_fpdart/arguments_parser.dart';
+import 'package:dart_cli_with_fpdart/cli_error.dart';
+import 'package:dart_cli_with_fpdart/config_reader.dart';
+import 'package:dart_cli_with_fpdart/file_reader.dart';
+import 'package:dart_cli_with_fpdart/layer.dart';
 import 'package:dart_cli_with_fpdart/main.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:dart_cli_with_fpdart/yaml_loader.dart';
 
 const options = "options";
 
-void main(List<String> arguments) async {
-  /// https://dart.dev/tutorials/server/cmdline#setting-exit-codes
-  exitCode = 0;
+void main(List<String> arguments) async =>
+    program(arguments).match<void>((cliError) {
+      exitCode = 2;
 
-  final parser = ArgParser()..addOption(options, abbr: 'o');
+      final errorMessage = switch (cliError) {
+        InvalidArgumentsError() => "Invalid CLI arguments",
+        LoadYamlOptionsError() => "Error while loading yaml configuration",
+        MissingPackageNameError() => "Missing package name in pubspec.yaml",
+        ReadFilesError() => "Error while reading project files",
+        ReadFileImportsError() => "Error while decoding file imports",
+      };
 
-  ArgResults argResults = parser.parse(arguments);
-  final optionsPath = argResults[options];
-  final cliOptions = CliOptions.init(optionsPath);
-
-  /// 1. List all files (`path`), use `HashSet`
-  /// 2. For each file, also list the imports (get `path` relative to current directory)
-  /// 3. Remove files from `HashSet` if found in imports
-  /// 4. What's left in the `HashSet` is unused
-  final program = listFilesLibDir;
-
-  final files = await program(cliOptions).run();
-
-  files.match((l) {
-    print("Error: $l");
-  }, (r) {
-    print("Files: ${r.$1}");
-    print("Imports: ${r.$2}");
-
-    // TODO: The entry file is not imported but used!
-    final unusedFiles = r.$1.partition(
-      (appFile) => r.$2.contains(appFile),
+      stderr.writeln(errorMessage);
+    }, (result) {
+      exitCode = 0;
+      stdout.writeln("Unused: ${result.$1}");
+      stdout.writeln("Used: ${result.$2}");
+    }).run(
+      AppMainLayer(
+        argumentsParser: ArgumentsParserImpl(ArgParser()),
+        configReader: ConfigReaderImpl(YamlLoaderImpl()),
+        fileReader: FileReaderImpl(),
+      ),
     );
-    print("Unused: ${unusedFiles.$1}");
-    print("Used: ${unusedFiles.$2}");
-  });
-}
