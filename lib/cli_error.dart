@@ -16,7 +16,8 @@ class LoadYamlOptionsError extends CliError {
 }
 
 class MissingPackageNameError extends CliError {
-  const MissingPackageNameError();
+  final String path;
+  const MissingPackageNameError(this.path);
 }
 
 class ReadFilesError extends CliError {

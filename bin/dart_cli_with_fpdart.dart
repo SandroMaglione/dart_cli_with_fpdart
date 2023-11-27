@@ -17,8 +17,10 @@ void main(List<String> arguments) async =>
 
       final errorMessage = switch (cliError) {
         InvalidArgumentsError() => "Invalid CLI arguments",
-        LoadYamlOptionsError() => "Error while loading yaml configuration",
-        MissingPackageNameError() => "Missing package name in pubspec.yaml",
+        LoadYamlOptionsError(yamlLoaderError: final yamlLoaderError) =>
+          "Error while loading yaml configuration: $yamlLoaderError",
+        MissingPackageNameError(path: final path) =>
+          "Missing package name in pubspec.yaml at path '$path'",
         ReadFilesError() => "Error while reading project files",
         ReadFileImportsError() => "Error while decoding file imports",
       };
@@ -26,6 +28,7 @@ void main(List<String> arguments) async =>
       stderr.writeln(errorMessage);
     }, (result) {
       exitCode = 0;
+
       stdout.writeln("Unused: ${result.$1}");
       stdout.writeln("Used: ${result.$2}");
     }).run(

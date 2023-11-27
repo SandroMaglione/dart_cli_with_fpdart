@@ -24,8 +24,9 @@ final class ConfigReaderImpl implements ConfigReader {
 
           return _(
             TaskEither.tryCatch(
-              () => yamlContent["name"],
-              (error, stackTrace) => MissingPackageNameError(),
+              () async => yamlContent["name"],
+              (error, stackTrace) =>
+                  MissingPackageNameError(cliOptions.pubspecPath),
             ),
           );
         },

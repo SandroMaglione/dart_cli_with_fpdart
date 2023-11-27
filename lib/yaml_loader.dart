@@ -21,7 +21,7 @@ final class YamlLoaderImpl implements YamlLoader {
                   (file) => TaskEither<YamlLoaderError, File>(
                     () async => (await file.exists())
                         ? Either.right(file)
-                        : Either.left(MissingFile()),
+                        : Either.left(MissingFile(path)),
                   ),
                 ),
           );
@@ -35,8 +35,8 @@ final class YamlLoaderImpl implements YamlLoader {
 
           return _(
             TaskEither.tryCatch(
-              () => loadYaml(fileContent),
-              (error, stackTrace) => ParsingFailed(),
+              () async => loadYaml(fileContent),
+              ParsingFailed.new,
             ),
           );
         },
