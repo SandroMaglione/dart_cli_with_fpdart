@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dart_cli_with_fpdart/cli_error.dart';
 import 'package:dart_cli_with_fpdart/cli_options.dart';
 import 'package:dart_cli_with_fpdart/import_match.dart';
+import 'package:dart_cli_with_fpdart/layer.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:yaml/yaml.dart';
 
@@ -14,6 +15,24 @@ extension on Uri {
 
 // TODO: Verify possible import formats (e.g. "import 'package" or "import './")
 final importRegex = RegExp(r"""^import ['"](?<path>.+)['"];$""");
+
+void program =
+    (List<String> arguments) => ReaderTaskEither<MainLayer, CliError, void>.Do(
+          (_) async {
+            final cliOptions = await _(
+              ReaderTaskEither(
+                (layer) =>
+                    layer.argumentsParser.parse(arguments).toTaskEither().run(),
+              ),
+            );
+
+            final packageName = await _(
+              ReaderTaskEither(
+                (layer) => layer.configReader.packageName(cliOptions).run(),
+              ),
+            );
+          },
+        );
 
 Future<String> packageName(CliOptions cliOptions) async {
   final pubspec = File(cliOptions.pubspecPath);
@@ -34,7 +53,7 @@ TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)> listFilesLibDir(
         final imports = HashSet<ImportMatch>();
 
         final dirList = dir.list(recursive: true);
-        await for (final FileSystemEntity file in dirList) {
+        await for (final file in dirList) {
           if (file is File && file.uri.fileExtension == "dart") {
             imports.addAll(await readImports(file, projectName));
 
@@ -50,11 +69,17 @@ TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)> listFilesLibDir(
 Future<List<ImportMatch>> readImports(File file, String projectName) async {
   final projectPackage = "package:$projectName";
 
-  final linesStream =
-      file.openRead().transform(utf8.decoder).transform(LineSplitter());
+  final linesStream = file
+      .openRead()
+      .transform(
+        utf8.decoder,
+      )
+      .transform(
+        LineSplitter(),
+      );
   final importList = <ImportMatch>[];
 
-  await for (var line in linesStream) {
+  await for (final line in linesStream) {
     if (line.isEmpty) continue;
 
     final path = importRegex.firstMatch(line)?.namedGroup("path");
