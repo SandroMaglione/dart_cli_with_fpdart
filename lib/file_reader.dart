@@ -12,35 +12,43 @@ extension on Uri {
 
 abstract final class FileReader {
   const FileReader();
-  TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
-      listFilesLibDir(String packageName);
+  TaskEither<
+      CliError,
+      ({
+        List<ImportMatch> fileList,
+        HashSet<ImportMatch> importSet,
+      })> listFilesLibDir(String packageName);
 }
 
 final class FileReaderImpl implements FileReader {
   static final _importRegex = RegExp(r"""^import ['"](?<path>.+)['"];$""");
 
   @override
-  TaskEither<CliError, (List<ImportMatch>, HashSet<ImportMatch>)>
-      listFilesLibDir(String packageName) => TaskEither.tryCatch(
-            () async {
-              final dir = Directory("lib");
+  TaskEither<
+      CliError,
+      ({
+        List<ImportMatch> fileList,
+        HashSet<ImportMatch> importSet,
+      })> listFilesLibDir(String packageName) => TaskEither.tryCatch(
+        () async {
+          final dir = Directory("lib");
 
-              final appFileList = <ImportMatch>[];
-              final imports = HashSet<ImportMatch>();
+          final fileList = <ImportMatch>[];
+          final importSet = HashSet<ImportMatch>();
 
-              final dirList = dir.list(recursive: true);
-              await for (final file in dirList) {
-                if (file is File && file.uri._fileExtension == "dart") {
-                  imports.addAll(await _readImports(file, packageName));
+          final dirList = dir.list(recursive: true);
+          await for (final file in dirList) {
+            if (file is File && file.uri._fileExtension == "dart") {
+              importSet.addAll(await _readImports(file, packageName));
 
-                  appFileList.add(ImportMatch.relative(file));
-                }
-              }
+              fileList.add(ImportMatch.relative(file));
+            }
+          }
 
-              return (appFileList, imports);
-            },
-            ReadFilesError.new,
-          );
+          return (fileList: fileList, importSet: importSet);
+        },
+        ReadFilesError.new,
+      );
 
   Future<List<ImportMatch>> _readImports(File file, String packageName) async {
     final projectPackage = "package:$packageName";
@@ -53,6 +61,7 @@ final class FileReaderImpl implements FileReader {
         .transform(
           LineSplitter(),
         );
+
     final importList = <ImportMatch>[];
 
     await for (final line in linesStream) {

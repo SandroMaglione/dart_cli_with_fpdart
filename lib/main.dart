@@ -3,11 +3,14 @@ import 'package:dart_cli_with_fpdart/import_match.dart';
 import 'package:dart_cli_with_fpdart/layer.dart';
 import 'package:fpdart/fpdart.dart';
 
-ReaderTaskEither<MainLayer, CliError,
-    (Iterable<ImportMatch>, Iterable<ImportMatch>)> program(
+typedef FileUsage = ({
+  Iterable<ImportMatch> unused,
+  Iterable<ImportMatch> used
+});
+
+ReaderTaskEither<MainLayer, CliError, FileUsage> program(
         List<String> arguments) =>
-    ReaderTaskEither<MainLayer, CliError,
-        (Iterable<ImportMatch>, Iterable<ImportMatch>)>.Do(
+    ReaderTaskEither<MainLayer, CliError, FileUsage>.Do(
       (_) async {
         final cliOptions = await _(
           ReaderTaskEither(
@@ -22,14 +25,16 @@ ReaderTaskEither<MainLayer, CliError,
           ),
         );
 
-        final imports = await _(
+        final readFile = await _(
           ReaderTaskEither(
             (layer) => layer.fileReader.listFilesLibDir(packageName).run(),
           ),
         );
 
-        return imports.$1.partition(
-          (appFile) => imports.$2.contains(appFile),
+        final fileUsage = readFile.fileList.partition(
+          (projectFile) => readFile.importSet.contains(projectFile),
         );
+
+        return (unused: fileUsage.$1, used: fileUsage.$2);
       },
     );

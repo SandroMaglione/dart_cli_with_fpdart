@@ -29,8 +29,19 @@ void main(List<String> arguments) async =>
     }, (result) {
       exitCode = 0;
 
-      stdout.writeln("Unused: ${result.$1}");
-      stdout.writeln("Used: ${result.$2}");
+      stdout.writeln();
+
+      stdout.writeln("Unused 👎");
+      for (final file in result.unused) {
+        stdout.writeln("  => $file");
+      }
+
+      stdout.writeln();
+
+      stdout.writeln("Used 👍");
+      for (final file in result.used) {
+        stdout.writeln("  => $file");
+      }
     }).run(
       AppMainLayer(
         argumentsParser: ArgumentsParserImpl(ArgParser()),
