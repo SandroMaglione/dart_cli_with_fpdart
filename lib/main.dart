@@ -13,24 +13,24 @@ ReaderTaskEither<MainLayer, CliError, FileUsage> program(
         List<String> arguments) =>
     ReaderTaskEither<MainLayer, CliError, FileUsage>.Do(
       (_) async {
+        final layer = await _(ReaderTaskEither.ask());
+
         final cliOptions = await _(
-          ReaderTaskEither(
-            (layer) =>
-                layer.argumentsParser.parse(arguments).toTaskEither().run(),
+          ReaderTaskEither.fromIOEither(
+            layer.argumentsParser.parse(arguments),
           ),
         );
 
         final packageName = await _(
-          ReaderTaskEither(
-            (layer) => layer.configReader.packageName(cliOptions).run(),
+          ReaderTaskEither.fromTaskEither(
+            layer.configReader.packageName(cliOptions),
           ),
         );
 
         final entry = ImportMatch(cliOptions.entry);
         final readFile = await _(
-          ReaderTaskEither(
-            (layer) =>
-                layer.fileReader.listFilesLibDir(packageName, entry).run(),
+          ReaderTaskEither.fromTaskEither(
+            layer.fileReader.listFilesLibDir(packageName, entry),
           ),
         );
 
