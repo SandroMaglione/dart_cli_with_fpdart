@@ -5,11 +5,9 @@ import 'package:dart_cli_with_fpdart/arguments_parser.dart';
 import 'package:dart_cli_with_fpdart/cli_error.dart';
 import 'package:dart_cli_with_fpdart/config_reader.dart';
 import 'package:dart_cli_with_fpdart/file_reader.dart';
-import 'package:dart_cli_with_fpdart/layer.dart';
 import 'package:dart_cli_with_fpdart/main.dart';
+import 'package:dart_cli_with_fpdart/main_layer.dart';
 import 'package:dart_cli_with_fpdart/yaml_loader.dart';
-
-const options = "options";
 
 void main(List<String> arguments) async =>
     program(arguments).match<void>((cliError) {
